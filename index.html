@@ -1,0 +1,409 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Calculadora</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: painel de entradas fixo à esquerda; à direita, quatro regimes lado a lado e o detalhamento do regime escolhido. Tema escuro único, pensado para projeção ao vivo. */
+:root{
+  color-scheme: dark;
+  --fundo:#0C0E0D; --chapa:#141816; --chapa2:#1B201D; --fio:#29302C; --fio2:#3A433E;
+  --tx:#EEF1EC; --tx2:#AEB6B0; --tx3:#7A847E;
+  --verde:#18C97A; --verde-tinta:#05261A; --petroleo:#2A8C93;
+  --alerta:#E3A83C; --perigo:#EE6460;
+  --f-disp:"Sora", "Segoe UI", system-ui, sans-serif;
+  --f-corpo:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--fundo);color:var(--tx);font-family:var(--f-corpo);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0}
+.tela{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:22px 40px}
+
+.topo{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-bottom:16px;border-bottom:1px solid var(--fio);margin-bottom:22px}
+.topo h1{font-family:var(--f-disp);font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.topo h1 span{color:var(--verde)}
+.topo p{margin:4px 0 0;color:var(--tx3);font-size:13.5px}
+.selo{font-family:var(--f-num);font-size:12px;color:var(--tx2);border:1px solid var(--fio2);border-radius:999px;padding:5px 12px;white-space:nowrap}
+
+.grade{display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:920px){.grade{grid-template-columns:minmax(0,1fr)}}
+
+.painel{background:var(--chapa);border:1px solid var(--fio);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:18px}
+.grupo{display:flex;flex-direction:column;gap:12px}
+.grupo h2{font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin:0}
+.campo label{display:block;font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:5px}
+.inp{position:relative}
+.inp .pre,.inp .suf{position:absolute;top:50%;transform:translateY(-50%);color:var(--tx3);font-family:var(--f-num);font-size:15px;pointer-events:none}
+.inp .pre{left:12px}.inp .suf{right:12px}
+.inp input{width:100%;background:var(--fundo);border:1.5px solid var(--fio2);border-radius:8px;color:var(--tx);font-family:var(--f-num);font-size:19px;font-weight:600;padding:10px 12px 10px 42px;font-variant-numeric:tabular-nums}
+.inp input.pct{padding:10px 36px 10px 12px}
+.inp input:focus{outline:none;border-color:var(--verde);box-shadow:0 0 0 3px color-mix(in srgb,var(--verde) 22%,transparent)}
+.dica{font-size:12px;color:var(--tx3);margin:5px 0 0;line-height:1.4}
+.atalhos{display:flex;flex-wrap:wrap;gap:6px}
+.atalhos button{background:var(--chapa2);border:1px solid var(--fio2);color:var(--tx2);border-radius:999px;padding:5px 11px;font:500 12.5px var(--f-corpo);cursor:pointer}
+.atalhos button:hover{border-color:var(--verde);color:var(--tx)}
+button:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
+
+.cartoes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1180px){.cartoes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.cartoes{grid-template-columns:minmax(0,1fr)}}
+.cartao{all:unset;box-sizing:border-box;cursor:pointer;background:var(--chapa);border:1.5px solid var(--fio);border-radius:12px;padding:15px 15px 13px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s}
+.cartao:hover{border-color:var(--fio2)}
+.cartao:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
+.cartao[aria-pressed="true"]{border-color:var(--petroleo);background:color-mix(in srgb,var(--petroleo) 10%,var(--chapa))}
+.cartao .nome{font-family:var(--f-disp);font-size:14px;font-weight:600;color:var(--tx)}
+.cartao .sub{font-size:12px;color:var(--tx3);min-height:18px}
+.cartao .valor{font-family:var(--f-num);font-size:clamp(20px,2.2vw,26px);font-weight:600;letter-spacing:-.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cartao .carga{font-family:var(--f-num);font-size:13px;color:var(--tx2)}
+.barra{height:6px;border-radius:3px;background:var(--fio);overflow:hidden}
+.barra i{display:block;height:100%;background:var(--tx3);border-radius:3px;transition:width .3s}
+.cartao.melhor .barra i{background:var(--verde)}
+.selo-melhor{align-self:flex-start;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--verde-tinta);background:var(--verde);border-radius:4px;padding:2px 7px;visibility:hidden}
+.cartao.melhor .selo-melhor{visibility:visible}
+.cartao .anual{font-size:12px;color:var(--tx3)}
+
+.detalhe{margin-top:16px;background:var(--chapa);border:1px solid var(--fio);border-radius:12px;padding:18px 18px 14px}
+.detalhe h3{font-family:var(--f-disp);font-size:17px;font-weight:600;margin:0 0 4px}
+.detalhe .lead{color:var(--tx2);font-size:13.5px;margin:0 0 12px}
+.tabela-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:8px 6px;border-bottom:1px solid var(--fio);vertical-align:top}
+td.rot{color:var(--tx)}
+td.rot small{display:block;color:var(--tx3);font-size:12px;margin-top:2px}
+td.v{font-family:var(--f-num);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.total td{border-bottom:0;font-weight:600;padding-top:11px}
+tr.total td.v{color:var(--verde);font-size:16px}
+
+.avisos{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.aviso{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--tx2);background:color-mix(in srgb,var(--alerta) 8%,transparent);border:1px solid color-mix(in srgb,var(--alerta) 35%,transparent);border-radius:8px;padding:9px 12px}
+.aviso b{color:var(--alerta);font-weight:600;white-space:nowrap}
+.aviso.risco{background:color-mix(in srgb,var(--perigo) 8%,transparent);border-color:color-mix(in srgb,var(--perigo) 35%,transparent)}
+.aviso.risco b{color:var(--perigo)}
+
+.premissas{margin-top:20px;background:var(--chapa);border:1px solid var(--fio);border-radius:12px;padding:14px 18px}
+.premissas summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3)}
+.premissas summary:focus-visible{outline:2px solid var(--verde);outline-offset:3px}
+.prem{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px 26px;margin-top:14px}
+.prem h4{font-family:var(--f-disp);font-size:13px;color:var(--verde);margin:0 0 6px;font-weight:600}
+.prem ul{list-style:none;margin:0;padding:0}
+.prem li{font-size:13px;color:var(--tx2);padding:4px 0;border-bottom:1px solid var(--fio)}
+.prem li:last-child{border-bottom:0}
+.rodape{margin:14px 0 0;font-size:12.5px;color:var(--tx3);border-top:1px solid var(--fio);padding-top:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="tela">
+  <header class="topo">
+    <div>
+      <h1><span>Calculadora</span></h1>
+      <p>Pessoa física, Simples Nacional e Lucro Presumido, lado a lado. Valores mensais.</p>
+    </div>
+    <span class="selo">Regras de 2026 · workshop 08/10</span>
+  </header>
+
+  <div class="grade">
+    <form class="painel" id="form" autocomplete="off">
+      <div class="grupo">
+        <h2>Atividade</h2>
+        <div class="campo">
+          <label for="fat">Faturamento por mês</label>
+          <div class="inp"><span class="pre">R$</span><input type="text" id="fat" inputmode="numeric" value="100.000"></div>
+          <div class="atalhos" style="margin-top:7px">
+            <button type="button" data-fat="18000">R$ 18 mil</button>
+            <button type="button" data-fat="40000">R$ 40 mil</button>
+            <button type="button" data-fat="100000">R$ 100 mil</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="desp">Despesas da atividade por mês</label>
+          <div class="inp"><span class="pre">R$</span><input type="text" id="desp" inputmode="numeric" value="30.000"></div>
+          <p class="dica">Material, aluguel, laboratório, equipe. Na PF, entra no Livro Caixa.</p>
+        </div>
+      </div>
+
+      <div class="grupo">
+        <h2>Pessoa física</h2>
+        <div class="campo">
+          <label for="dep">Dependentes no IR</label>
+          <div class="inp"><span class="pre">nº</span><input type="text" id="dep" inputmode="numeric" value="0"></div>
+        </div>
+        <div class="campo">
+          <label for="issPF">ISS fixo do autônomo por mês</label>
+          <div class="inp"><span class="pre">R$</span><input type="text" id="issPF" inputmode="numeric" value="0"></div>
+          <p class="dica">Valor cobrado pelo município. Deixe zero se não souber.</p>
+        </div>
+      </div>
+
+      <div class="grupo">
+        <h2>Simples Nacional</h2>
+        <div class="campo">
+          <label for="proSN">Pró-labore no Simples</label>
+          <div class="inp"><span class="pre">R$</span><input type="text" id="proSN" inputmode="numeric" value="28.000"></div>
+          <p class="dica" id="dicaFator">Fator R: folha de 28% do faturamento leva ao Anexo III.</p>
+        </div>
+      </div>
+
+      <div class="grupo">
+        <h2>Lucro Presumido</h2>
+        <div class="campo">
+          <label for="proLP">Pró-labore no Presumido</label>
+          <div class="inp"><span class="pre">R$</span><input type="text" id="proLP" inputmode="numeric" value="1.621"></div>
+        </div>
+        <div class="campo">
+          <label for="qual">Receita cirúrgica e de imagem</label>
+          <div class="inp"><span class="suf">%</span><input type="text" class="pct" id="qual" inputmode="numeric" value="70"></div>
+          <p class="dica">Parte da receita segregada que pode ir para a base de 8% e 12%.</p>
+        </div>
+        <div class="campo">
+          <label for="iss">ISS sobre o faturamento</label>
+          <div class="inp"><span class="suf">%</span><input type="text" class="pct" id="iss" inputmode="decimal" value="3"></div>
+          <p class="dica">Entre 2% e 5%, conforme o município.</p>
+        </div>
+      </div>
+    </form>
+
+    <section aria-label="Resultado">
+      <div class="cartoes" id="cartoes" role="group" aria-label="Regimes"></div>
+      <div class="detalhe">
+        <h3 id="detTit"></h3>
+        <p class="lead" id="detLead"></p>
+        <div class="tabela-wrap"><table><tbody id="detCorpo"></tbody></table></div>
+        <div class="avisos" id="avisos"></div>
+      </div>
+    </section>
+  </div>
+
+  <details class="premissas">
+    <summary>Premissas do cálculo</summary>
+    <div class="prem">
+      <div>
+        <h4>IRPF 2026 (tabela mensal)</h4>
+        <ul>
+          <li>Até R$ 2.428,80: isento</li>
+          <li>Até R$ 2.826,65: 7,5% (deduz R$ 182,16)</li>
+          <li>Até R$ 3.751,05: 15% (deduz R$ 394,16)</li>
+          <li>Até R$ 4.664,68: 22,5% (deduz R$ 675,49)</li>
+          <li>Acima: 27,5% (deduz R$ 908,73)</li>
+          <li>Redutor da Lei 15.270/2025: zera o imposto até R$ 5.000 de rendimento; entre R$ 5.000,01 e R$ 7.350, reduz R$ 978,62 menos 0,133145 × rendimento</li>
+          <li>Dependente: R$ 189,59 por mês</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Pessoa física</h4>
+        <ul>
+          <li>Rendimento tributável: faturamento bruto</li>
+          <li>Dedução: a maior entre Livro Caixa (com dependentes) e o desconto simplificado de R$ 607,20</li>
+          <li>O redutor olha o rendimento bruto</li>
+          <li>INSS fora da conta, na PF e no pró-labore da PJ</li>
+        </ul>
+        <h4 style="margin-top:12px">Simples Nacional</h4>
+        <ul>
+          <li>Alíquota efetiva pela receita dos últimos 12 meses (faturamento × 12)</li>
+          <li>Fator R ≥ 28%: Anexo III; abaixo: Anexo V</li>
+          <li>ISS, PIS, Cofins, IRPJ, CSLL e INSS patronal dentro do DAS</li>
+          <li>Pró-labore: IRPF com desconto simplificado e tabela</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Lucro Presumido</h4>
+        <ul>
+          <li>Presunção de 32% para serviços; 8% (IRPJ) e 12% (CSLL) na parte equiparada</li>
+          <li>IRPJ 15% e adicional de 10% sobre a base acima de R$ 20 mil por mês</li>
+          <li>CSLL 9%; PIS 0,65% e Cofins 3% cumulativos</li>
+          <li>Pró-labore: IRPF com desconto simplificado e tabela</li>
+        </ul>
+      </div>
+    </div>
+    <p class="rodape">Simulação para fins didáticos. Não confirma enquadramento, não considera CBS e IBS em fase de teste (2026) nem a tributação mínima de alta renda. Confira as tabelas na legislação atualizada antes de decidir.</p>
+  </details>
+</div>
+
+<script>
+const R = {
+  irpf: [
+    { ate: 2428.80, aliq: 0,     ded: 0 },
+    { ate: 2826.65, aliq: 0.075, ded: 182.16 },
+    { ate: 3751.05, aliq: 0.15,  ded: 394.16 },
+    { ate: 4664.68, aliq: 0.225, ded: 675.49 },
+    { ate: Infinity, aliq: 0.275, ded: 908.73 }
+  ],
+  dependente: 189.59, descontoSimplificado: 607.20,
+  redutorAte: 5000, redutorFaixaAte: 7350, redutorMax: 312.89, redutorA: 978.62, redutorB: 0.133145,
+  inssTeto: 8475.55, inssAutonomo: 0.20, inssSocio: 0.11, inssPatronal: 0.20,
+  anexoIII: [[180000,.06,0],[360000,.112,9360],[720000,.135,17640],[1800000,.16,35640],[3600000,.21,125640],[4800000,.33,648000]],
+  anexoV:   [[180000,.155,0],[360000,.18,4500],[720000,.195,9900],[1800000,.205,17100],[3600000,.23,62100],[4800000,.305,540000]],
+  fatorR: 0.28,
+  presServ: 0.32, presIRPJeq: 0.08, presCSLLeq: 0.12,
+  irpj: 0.15, adicional: 0.10, limiteAdic: 20000, csll: 0.09, pis: 0.0065, cofins: 0.03,
+  limiteDividendo: 50000
+};
+
+const $ = id => document.getElementById(id);
+const brl = v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pct = v => (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const num = s => { const n = parseFloat(String(s).replace(/\./g, '').replace(',', '.')); return isNaN(n) ? 0 : n; };
+
+function irpfTabela(base) {
+  if (base <= 0) return 0;
+  const f = R.irpf.find(x => base <= x.ate);
+  return Math.max(0, base * f.aliq - f.ded);
+}
+function redutor(rend) {
+  if (rend <= R.redutorAte) return R.redutorMax;
+  if (rend <= R.redutorFaixaAte) return Math.max(0, R.redutorA - R.redutorB * rend);
+  return 0;
+}
+// IRPF mensal: tabela sobre a base, depois o redutor calculado sobre o rendimento tributável
+function irpfMensal(rendimento, deducoes) {
+  const bruto = irpfTabela(rendimento - deducoes);
+  const red = rendimento <= R.redutorAte ? bruto : Math.min(bruto, redutor(rendimento));
+  return { imposto: Math.max(0, bruto - red), bruto, red };
+}
+function simplesEfetiva(rbt12, tabela) {
+  const f = tabela.find(x => rbt12 <= x[0]) || tabela[tabela.length - 1];
+  return Math.max(0, (rbt12 * f[1] - f[2]) / rbt12);
+}
+
+function lerEntradas() {
+  return {
+    fat: num($('fat').value), desp: num($('desp').value), dep: num($('dep').value),
+    issPF: num($('issPF').value), proSN: num($('proSN').value), proLP: num($('proLP').value),
+    qual: Math.min(100, num($('qual').value)) / 100, iss: num($('iss').value) / 100
+  };
+}
+
+// Pessoa física na ordem do simulador da Receita: rendimento tributável = faturamento bruto;
+// dedução = a maior entre Livro Caixa (+ dependentes) e o desconto simplificado; INSS fora da conta.
+function calcPF(e) {
+  const legais = e.desp + e.dep * R.dependente;
+  const usaSimplificado = R.descontoSimplificado > legais;
+  const ded = Math.max(legais, R.descontoSimplificado);
+  const base = Math.max(0, e.fat - ded);
+  const ir = irpfMensal(e.fat, ded);
+  const linhas = [
+    ['Rendimento tributável', 'Faturamento bruto do mês', e.fat],
+    ['Dedução utilizada', usaSimplificado ? 'Desconto simplificado, maior que o Livro Caixa' : 'Livro Caixa' + (e.dep > 0 ? ' e dependentes' : '') + ', maior que o desconto simplificado', ded],
+    ['Base de cálculo', 'Rendimento menos a dedução', base],
+    ['IRPF pela tabela', 'Tabela progressiva mensal', ir.bruto],
+    ['Redutor da Lei 15.270/2025', 'Calculado sobre o rendimento bruto', ir.red],
+    ['IRPF do mês (carnê-leão)', 'Tabela menos redutor', ir.imposto],
+    ['ISS fixo', 'Valor municipal informado', e.issPF]
+  ];
+  return { linhas, total: ir.imposto + e.issPF, sub: 'Carnê-leão e Livro Caixa', avisos: [] };
+}
+
+function calcSN(e) {
+  const rbt12 = e.fat * 12;
+  const fr = e.fat > 0 ? e.proSN / e.fat : 0;
+  const anexoIII = fr >= R.fatorR;
+  const efetiva = rbt12 > 0 ? simplesEfetiva(rbt12, anexoIII ? R.anexoIII : R.anexoV) : 0;
+  const das = e.fat * efetiva;
+  const ir = irpfMensal(e.proSN, e.proSN > 0 ? R.descontoSimplificado : 0);
+  const avisos = [];
+  if (rbt12 > 4800000) avisos.push(['risco', 'Fora do Simples', 'Receita anual acima de R$ 4,8 milhões não cabe no Simples Nacional.']);
+  if (!anexoIII) avisos.push(['', 'Fator R', 'Pró-labore abaixo de 28% do faturamento: a clínica vai para o Anexo V, com alíquota maior.']);
+  return {
+    linhas: [
+      ['DAS do Simples', (anexoIII ? 'Anexo III' : 'Anexo V') + ', alíquota efetiva de ' + pct(efetiva) + ' (Fator R de ' + pct(fr) + ')', das],
+      ['IRPF sobre o pró-labore', 'Desconto simplificado e tabela progressiva' + (ir.red > 0 ? ', com redutor' : ''), ir.imposto]
+    ],
+    total: das + ir.imposto, sub: (anexoIII ? 'Anexo III' : 'Anexo V') + ' · ' + pct(efetiva) + ' no DAS', avisos
+  };
+}
+
+function calcLP(e, q) {
+  const baseIRPJ = e.fat * (q * R.presIRPJeq + (1 - q) * R.presServ);
+  const baseCSLL = e.fat * (q * R.presCSLLeq + (1 - q) * R.presServ);
+  const irpj = baseIRPJ * R.irpj;
+  const adic = Math.max(0, baseIRPJ - R.limiteAdic) * R.adicional;
+  const csll = baseCSLL * R.csll;
+  const pisCof = e.fat * (R.pis + R.cofins);
+  const iss = e.fat * e.iss;
+  const ir = irpfMensal(e.proLP, e.proLP > 0 ? R.descontoSimplificado : 0);
+  const avisos = [];
+  const total = irpj + adic + csll + pisCof + iss + ir.imposto;
+  return {
+    linhas: [
+      ['IRPJ', 'Base presumida de ' + brl(baseIRPJ) + ' × 15%', irpj],
+      ['Adicional do IRPJ', '10% sobre a base acima de R$ 20 mil', adic],
+      ['CSLL', 'Base presumida de ' + brl(baseCSLL) + ' × 9%', csll],
+      ['PIS e Cofins', '3,65% sobre o faturamento (cumulativo)', pisCof],
+      ['ISS', pct(e.iss) + ' sobre o faturamento', iss],
+      ['IRPF sobre o pró-labore', 'Desconto simplificado e tabela progressiva' + (ir.red > 0 ? ', com redutor' : ''), ir.imposto]
+    ],
+    total, sub: q > 0 ? pct(q) + ' da receita em 8% e 12%' : 'Base de 32% em toda a receita', avisos
+  };
+}
+
+const REGIMES = [
+  { id: 'PF', nome: 'Pessoa física', fn: e => calcPF(e) },
+  { id: 'SN', nome: 'Simples Nacional', fn: e => calcSN(e) },
+  { id: 'LP', nome: 'Presumido', fn: e => calcLP(e, 0) },
+  { id: 'EQ', nome: 'Presumido equiparado', fn: e => calcLP(e, e.qual) }
+];
+let ativo = 'PF';
+try { ativo = localStorage.getItem('regimeAtivo') || 'PF'; } catch (_) {}
+
+function render() {
+  const e = lerEntradas();
+  const res = REGIMES.map(r => ({ ...r, ...r.fn(e) }));
+  const validos = res.filter(r => !(r.id === 'SN' && e.fat * 12 > 4800000));
+  const menor = Math.min(...validos.map(r => r.total));
+  const maior = Math.max(...res.map(r => r.total), 1);
+  const pf = res[0].total;
+
+  $('dicaFator').textContent = e.fat > 0
+    ? 'Fator R de ' + pct(e.proSN / e.fat) + (e.proSN / e.fat >= R.fatorR ? ': Anexo III.' : ': abaixo de 28%, Anexo V.')
+    : 'Fator R: folha de 28% do faturamento leva ao Anexo III.';
+
+  $('cartoes').innerHTML = res.map(r => {
+    const melhor = e.fat > 0 && r.total === menor && validos.includes(r);
+    const dif = pf - r.total;
+    const anual = r.id === 'PF' ? 'Referência de comparação'
+      : (dif >= 0 ? 'Economia de ' + brl(dif * 12) + ' por ano' : 'Custa ' + brl(-dif * 12) + ' a mais por ano');
+    return `<button type="button" class="cartao${melhor ? ' melhor' : ''}" data-id="${r.id}" aria-pressed="${r.id === ativo}">
+      <span class="selo-melhor">Menor carga</span>
+      <span class="nome">${r.nome}</span>
+      <span class="sub">${r.sub}</span>
+      <span class="valor">${brl(r.total)}</span>
+      <span class="carga">${e.fat > 0 ? pct(r.total / e.fat) : '0,00%'} do faturamento</span>
+      <span class="barra" aria-hidden="true"><i style="width:${(r.total / maior * 100).toFixed(1)}%"></i></span>
+      <span class="anual">${anual}</span>
+    </button>`;
+  }).join('');
+
+  const sel = res.find(r => r.id === ativo) || res[0];
+  $('detTit').textContent = sel.nome + ': de onde vem o número';
+  $('detLead').textContent = 'Faturamento de ' + brl(e.fat) + ' por mês. Carga total de ' + (e.fat > 0 ? pct(sel.total / e.fat) : '0,00%') + '.';
+  $('detCorpo').innerHTML = sel.linhas.map(([n, d, v]) =>
+    `<tr><td class="rot">${n}<small>${d}</small></td><td class="v">${brl(v)}</td></tr>`).join('')
+    + `<tr class="total"><td class="rot">Total por mês</td><td class="v">${brl(sel.total)}</td></tr>`
+    + `<tr class="total"><td class="rot">Total por ano</td><td class="v">${brl(sel.total * 12)}</td></tr>`;
+  $('avisos').innerHTML = sel.avisos.map(([c, t, x]) => `<div class="aviso ${c}"><b>${t}</b><span>${x}</span></div>`).join('');
+}
+
+$('cartoes').addEventListener('click', ev => {
+  const b = ev.target.closest('.cartao'); if (!b) return;
+  ativo = b.dataset.id;
+  try { localStorage.setItem('regimeAtivo', ativo); } catch (_) {}
+  render();
+});
+['fat', 'desp', 'issPF', 'proSN', 'proLP'].forEach(id => $(id).addEventListener('input', ev => {
+  const so = ev.target.value.replace(/\D/g, '');
+  ev.target.value = so ? parseInt(so, 10).toLocaleString('pt-BR') : '';
+  render();
+}));
+['dep', 'qual'].forEach(id => $(id).addEventListener('input', ev => {
+  ev.target.value = ev.target.value.replace(/\D/g, '').slice(0, 3); render();
+}));
+$('iss').addEventListener('input', ev => { ev.target.value = ev.target.value.replace(/[^\d,]/g, '').slice(0, 5); render(); });
+document.querySelectorAll('[data-fat]').forEach(b => b.addEventListener('click', () => {
+  const v = +b.dataset.fat;
+  $('fat').value = v.toLocaleString('pt-BR');
+  $('desp').value = Math.round(v * 0.3).toLocaleString('pt-BR');
+  $('proSN').value = Math.round(v * 0.28).toLocaleString('pt-BR');
+  render();
+}));
+$('form').addEventListener('submit', ev => ev.preventDefault());
+render();
+</script>
+
+</body></html>
